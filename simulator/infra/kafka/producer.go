@@ -1,32 +1,37 @@
 package kafka
 
 import (
-	ckafka "github.com/confluentinc/confluent-kafka-go/kafka"
 	"log"
 	"os"
+
+	cKafka "github.com/confluentinc/confluent-kafka-go/kafka"
 )
 
 // NewKafkaProducer creates a ready to go kafka.Producer instance
-func NewKafkaProducer() *ckafka.Producer {
-	configMap := &ckafka.ConfigMap{
+func NewKafkaProducer() *cKafka.Producer {
+	configMap := &cKafka.ConfigMap{
 		"bootstrap.servers": os.Getenv("KafkaBootstrapServers"),
 	}
-	p, err := ckafka.NewProducer(configMap)
+
+	producer, err := cKafka.NewProducer(configMap)
 	if err != nil {
 		log.Println(err.Error())
 	}
-	return p
+
+	return producer
 }
 
 // Publish is simple function created to publish new message to kafka
-func Publish(msg string, topic string, producer *ckafka.Producer) error {
-	message := &ckafka.Message{
-		TopicPartition: ckafka.TopicPartition{Topic: &topic, Partition: ckafka.PartitionAny},
-		Value:          []byte(msg),
+func Publish(message string, topic string, producer *cKafka.Producer) error {
+	kafkaMessage := &cKafka.Message{
+		TopicPartition: cKafka.TopicPartition{Topic: &topic, Partition: cKafka.PartitionAny},
+		Value:          []byte(message),
 	}
-	err := producer.Produce(message, nil)
+
+	err := producer.Produce(kafkaMessage, nil)
 	if err != nil {
 		return err
 	}
+
 	return nil
 }

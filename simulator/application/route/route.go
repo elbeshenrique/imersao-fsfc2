@@ -9,20 +9,17 @@ import (
 	"strings"
 )
 
-// Route represents a request of new delivery request
 type Route struct {
-	ID        string `json:"routeId"`
-	ClientID  string `json:"clientId"`
+	ID        string     `json:"routeId"`
+	ClientID  string     `json:"clientId"`
 	Positions []Position `json:"position"`
 }
 
-// Position is a type which contains the lat and long
 type Position struct {
 	Lat  float64 `json:"lat"`
 	Long float64 `json:"long"`
 }
 
-// PartialRoutePosition is the actual response which the system will return
 type PartialRoutePosition struct {
 	ID       string    `json:"routeId"`
 	ClientID string    `json:"clientId"`
@@ -36,52 +33,65 @@ func NewRoute() *Route {
 }
 
 // LoadPositions loads from a .txt file all positions (lat and long) to the Position attribute of the struct
-func (r *Route) LoadPositions() error {
-	if r.ID == "" {
+func (route *Route) LoadPositions() error {
+	if route.ID == "" {
 		return errors.New("route id not informed")
 	}
-	f, err := os.Open("destinations/" + r.ID + ".txt")
+
+	file, err := os.Open("destinations/" + route.ID + ".txt")
 	if err != nil {
 		return err
 	}
-	defer f.Close()
-	scanner := bufio.NewScanner(f)
+
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		data := strings.Split(scanner.Text(), ",")
-		lat, err := strconv.ParseFloat(data[0], 64)
+		line := scanner.Text()
+		data := strings.Split(line, ",")
+
+		latitude, err := strconv.ParseFloat(data[0], 64)
 		if err != nil {
 			return nil
 		}
-		long, err := strconv.ParseFloat(data[1], 64)
+
+		longitude, err := strconv.ParseFloat(data[1], 64)
 		if err != nil {
 			return nil
 		}
-		r.Positions = append(r.Positions, Position{
-			Lat:  lat,
-			Long: long,
+
+		route.Positions = append(route.Positions, Position{
+			Lat:  latitude,
+			Long: longitude,
 		})
 	}
+
 	return nil
 }
 
 // ExportJsonPositions generates a slice of string in Json using PartialRoutePosition struct
-func (r *Route) ExportJsonPositions() ([]string, error) {
-	var route PartialRoutePosition
+func (route *Route) ExportJsonPositions() ([]string, error) {
+	var partialRoute PartialRoutePosition
 	var result []string
-	total := len(r.Positions)
-	for k, v := range r.Positions {
-		route.ID = r.ID
-		route.ClientID = r.ClientID
-		route.Position = []float64{v.Lat, v.Long}
-		route.Finished = false
-		if total-1 == k {
-			route.Finished = true
+
+	total := len(route.Positions)
+	for index, value := range route.Positions {
+		partialRoute.ID = route.ID
+		partialRoute.ClientID = route.ClientID
+		partialRoute.Position = []float64{value.Lat, value.Long}
+		partialRoute.Finished = false
+
+		if total-1 == index {
+			partialRoute.Finished = true
 		}
-		jsonRoute, err := json.Marshal(route)
+
+		jsonRoute, err := json.Marshal(partialRoute)
 		if err != nil {
 			return nil, err
 		}
+
 		result = append(result, string(jsonRoute))
 	}
+
 	return result, nil
 }
